@@ -7,94 +7,106 @@ public class PlayerController : MonoBehaviour
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintMultiplier = 1.5f;
-    [SerializeField] private float rotationSmoothTime = 0.12f;
     [SerializeField] private float gravity = -9.81f;
 
-    private CharacterController controller;
-    private InputSystem_Actions inputActions;
+    [Header("References")]
+    [SerializeField] private FirstPersonCamera cameraController;
+
+    private CharacterController characterController;
     private Vector2 moveInput;
     private bool isSprinting;
-    private float currentRotationVelocity;
     private Vector3 velocity;
+    private InputSystem_Actions inputActions;
 
     private void Awake()
     {
-        controller = GetComponent<CharacterController>();
+        characterController = GetComponent<CharacterController>();
         inputActions = new InputSystem_Actions();
+
+        // If camera controller not assigned, try to find it
+        if (cameraController == null)
+        {
+            cameraController = GetComponentInChildren<FirstPersonCamera>();
+        }
     }
 
     private void OnEnable()
     {
         inputActions.Player.Enable();
-        inputActions.Player.Move.performed += OnMovePerformed;
-        inputActions.Player.Move.canceled += OnMoveCanceled;
-        inputActions.Player.Sprint.performed += OnSprintPerformed;
-        inputActions.Player.Sprint.canceled += OnSprintCanceled;
+        inputActions.Player.Move.performed += OnMove;
+        inputActions.Player.Move.canceled += OnMove;
+        inputActions.Player.Sprint.performed += OnSprint;
+        inputActions.Player.Sprint.canceled += OnSprint;
     }
 
     private void OnDisable()
     {
-        inputActions.Player.Move.performed -= OnMovePerformed;
-        inputActions.Player.Move.canceled -= OnMoveCanceled;
-        inputActions.Player.Sprint.performed -= OnSprintPerformed;
-        inputActions.Player.Sprint.canceled -= OnSprintCanceled;
+        inputActions.Player.Move.performed -= OnMove;
+        inputActions.Player.Move.canceled -= OnMove;
+        inputActions.Player.Sprint.performed -= OnSprint;
+        inputActions.Player.Sprint.canceled -= OnSprint;
         inputActions.Player.Disable();
     }
 
-    private void OnMovePerformed(InputAction.CallbackContext context)
+    private void OnMove(InputAction.CallbackContext context)
     {
         moveInput = context.ReadValue<Vector2>();
     }
 
-    private void OnMoveCanceled(InputAction.CallbackContext context)
+    private void OnSprint(InputAction.CallbackContext context)
     {
-        moveInput = Vector2.zero;
-    }
-
-    private void OnSprintPerformed(InputAction.CallbackContext context)
-    {
-        isSprinting = true;
-    }
-
-    private void OnSprintCanceled(InputAction.CallbackContext context)
-    {
-        isSprinting = false;
+        isSprinting = context.performed;
     }
 
     private void Update()
     {
-        HandleMovement();
+        MovePlayer();
         ApplyGravity();
     }
 
-    private void HandleMovement()
+    private void MovePlayer()
     {
-        // Calculate movement direction
-        Vector3 moveDirection = new Vector3(moveInput.x, 0f, moveInput.y).normalized;
+        // Get camera-relative directions
+        Vector3 forward = Vector3.zero;
+        Vector3 right = Vector3.zero;
 
-        if (moveDirection.magnitude >= 0.1f)
+        if (cameraController != null)
         {
-            // Calculate target angle and smooth rotation
-            float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
-            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref currentRotationVelocity, rotationSmoothTime);
-            transform.rotation = Quaternion.Euler(0f, angle, 0f);
-
-            // Apply movement with sprint modifier
-            float speed = moveSpeed * (isSprinting ? sprintMultiplier : 1f);
-            Vector3 move = moveDirection * speed;
-            controller.Move(move * Time.deltaTime);
+            forward = cameraController.GetForwardDirection();
+            right = cameraController.GetRightDirection();
         }
+        else
+        {
+            // Fallback to transform directions if no camera
+            forward = transform.forward;
+            right = transform.right;
+        }
+
+        // Flatten directions to prevent flying when looking up/down
+        forward.y = 0f;
+        right.y = 0f;
+        forward.Normalize();
+        right.Normalize();
+
+        // Calculate movement direction based on input and camera direction
+        Vector3 moveDirection = (forward * moveInput.y + right * moveInput.x).normalized;
+
+        // Apply speed with sprint modifier
+        float currentSpeed = moveSpeed * (isSprinting ? sprintMultiplier : 1f);
+
+        // Move the character
+        characterController.Move(moveDirection * currentSpeed * Time.deltaTime);
     }
 
     private void ApplyGravity()
     {
         // Apply gravity
-        if (controller.isGrounded && velocity.y < 0)
+        if (characterController.isGrounded && velocity.y < 0)
         {
-            velocity.y = -2f; // Small downward force to keep grounded
+            velocity.y = -2f; // Small value to keep grounded
         }
 
         velocity.y += gravity * Time.deltaTime;
-        controller.Move(velocity * Time.deltaTime);
+        characterController.Move(velocity * Time.deltaTime);
     }
 }
