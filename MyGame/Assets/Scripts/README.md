@@ -1,81 +1,102 @@
-# First-Person Camera and Movement System
+# Sword Physics System
 
-This folder contains the scripts for first-person camera control and player movement.
+## Overview
+This system implements sword physics interactions for the knight character. The sword has collider and rigidbody components that detect hits and apply force to objects.
 
 ## Components
 
-### FirstPersonCamera.cs
-Handles mouse-based camera rotation with the following features:
-- Vertical camera rotation (pitch) with clamping
-- Horizontal player rotation (yaw)
-- Cursor locking for immersive gameplay
-- Configurable mouse sensitivity
-- Provides forward/right direction for movement
+### SwordPhysics.cs
+Handles sword collision detection and force application.
+- **Rigidbody**: Kinematic (controlled by parent/animation)
+- **Collider**: Trigger-based to detect hits
+- **Force Application**: Applies impulse force based on sword velocity
+- **Parameters**:
+  - `strikeForce`: Base force multiplier (default: 10)
+  - `minimumVelocity`: Minimum speed to register hit (default: 0.5)
 
-### PlayerController.cs
-Handles player movement with camera-relative directions:
-- WASD movement in the direction the camera is facing
-- Sprint functionality (Left Shift by default)
-- Gravity simulation
-- Requires CharacterController component
+### KnightController.cs
+Manages knight character and sword positioning.
+- Keeps sword parented to knight
+- Maintains sword offset position
+- Provides visual debugging with gizmos
+
+### SceneSetupHelper.cs
+Editor utility for quick scene setup.
+- Creates knight (capsule placeholder)
+- Creates sword (cube) with physics
+- Creates test physics objects
+- **Usage**: In Unity Editor, go to `GameObject -> Setup Knight and Sword`
 
 ## Setup Instructions
 
-### 1. Create Player GameObject
-1. Create an empty GameObject named "Player"
-2. Add a CharacterController component
-3. Configure CharacterController:
-   - Height: 2
-   - Radius: 0.5
-   - Center: (0, 1, 0)
+### Method 1: Automated Setup (Recommended)
+1. Open Unity Editor
+2. Open `SampleScene`
+3. Go to menu: `GameObject -> Setup Knight and Sword`
+4. Scene will be populated with knight, sword, and test objects
 
-### 2. Setup Camera
-1. Make the Main Camera a child of the Player GameObject
-2. Position the camera at (0, 1.6, 0) to simulate eye height
-3. Add the FirstPersonCamera component to the Main Camera
-4. Assign the Player GameObject to the "Player Body" field
+### Method 2: Manual Setup
+1. Create Knight:
+   - Create Capsule GameObject
+   - Add `KnightController` script
+   - Position at (0, 1, 0)
 
-### 3. Setup Player Controller
-1. Add the PlayerController component to the Player GameObject
-2. The script will automatically find the FirstPersonCamera component
-3. Adjust settings:
-   - Move Speed: 5 (default walking speed)
-   - Sprint Multiplier: 1.5 (sprint speed multiplier)
-   - Gravity: -9.81 (default gravity)
+2. Create Sword:
+   - Create Cube GameObject
+   - Scale: (0.1, 0.8, 0.1)
+   - Parent to Knight
+   - Local Position: (0.5, 0, 0.5)
+   - Local Rotation: (0, 0, 45)
+   - Add `BoxCollider` (set as trigger)
+   - Add `Rigidbody` (set as kinematic)
+   - Add `SwordPhysics` script
+   - Assign to Knight's `sword` field
 
-### 4. Input System
-The Input System Actions are already configured in `InputSystem_Actions.inputactions`:
-- **Move**: WASD or Arrow Keys
-- **Look**: Mouse movement
-- **Sprint**: Left Shift
+3. Create Test Objects:
+   - Create Cube GameObjects
+   - Add `Rigidbody` component
+   - Position near knight
 
-## Controls
+## Testing
 
-- **W/A/S/D**: Move forward/left/backward/right relative to camera direction
-- **Mouse**: Look around (camera follows mouse movement)
-- **Left Shift**: Sprint (hold to move faster)
+### How to Test Sword Physics
+1. Enter Play Mode
+2. Move the knight (use WASD when movement is implemented)
+3. Rotate camera quickly (sword should follow)
+4. Sword hits should push test objects away
+5. Check Console for hit debug logs
 
-## How It Works
+### Expected Behavior
+- Fast sword movement = strong force
+- Slow sword movement = weak/no force
+- Objects should fly away from sword strikes
+- Debug rays show sword velocity (red lines)
 
-1. **FirstPersonCamera** reads mouse input via the Input System
-2. The camera rotates vertically (up/down)
-3. The player body rotates horizontally (left/right)
-4. **PlayerController** gets the camera's forward direction
-5. Movement input (WASD) is calculated relative to where the camera is looking
-6. The player moves in the direction they're facing
+## Configuration
 
-## Customization
+### Adjusting Strike Force
+Select sword object, adjust `SwordPhysics` component:
+- Increase `strikeForce` for more powerful hits
+- Decrease `minimumVelocity` for more sensitive detection
 
-### Mouse Sensitivity
-Adjust the `Mouse Sensitivity` field in the FirstPersonCamera component (default: 100)
+### Adjusting Sword Position
+Select knight object, adjust `KnightController` component:
+- Modify `swordOffset` to reposition sword
+- Modify `swordRotation` to change sword angle
 
-### Vertical Look Clamp
-Control how far the player can look up and down:
-- Vertical Clamp Min: -90 (straight down)
-- Vertical Clamp Max: 90 (straight up)
+## Integration with Other Systems
 
-### Movement Speed
-Adjust movement parameters in the PlayerController component:
-- Move Speed: Base walking speed
-- Sprint Multiplier: How much faster sprinting is
-- Gravity: Strength of gravity effect
+This implementation addresses:
+- **ga-b27**: Sword physics interactions ✓
+- **ga-4p4**: Knight character with sword model ✓ (partial - using placeholders)
+
+Requires integration with:
+- **ga-631**: Camera-based sword swinging (velocity from camera rotation)
+- **ga-v2y**: WASD movement controller
+- **ga-f34**: Camera control integration
+
+## Notes
+- Using placeholder models (Capsule for knight, Cube for sword)
+- Final character models can be swapped in later
+- Physics system is independent of visuals
+- Rigidbody is kinematic - sword motion comes from animation/parent transform
