@@ -6,13 +6,52 @@ using UnityEngine;
 /// </summary>
 public class TrackableObject : MonoBehaviour
 {
+    [Header("Tracking Settings")]
+    [Tooltip("Unique identifier for this object")]
+    [SerializeField] private string _objectId = "";
+
+    [Tooltip("Whether this object should be tracked")]
+    [SerializeField] private bool _isTracked = true;
+
     [Header("Fall Detection")]
     [Tooltip("Y position below which object is considered off platform")]
     [SerializeField] private float fallThreshold = -5f;
 
-    private bool isOnPlatform = true;
+    private bool _isOnPlatform = true;
 
-    public bool IsOnPlatform => isOnPlatform;
+    /// <summary>
+    /// Unique identifier for this object. Auto-generated if not set.
+    /// </summary>
+    public string objectId
+    {
+        get
+        {
+            if (string.IsNullOrEmpty(_objectId))
+            {
+                _objectId = gameObject.name;
+            }
+            return _objectId;
+        }
+        set => _objectId = value;
+    }
+
+    /// <summary>
+    /// Whether this object should be tracked by the ObjectTracker system.
+    /// </summary>
+    public bool isTracked
+    {
+        get => _isTracked;
+        set => _isTracked = value;
+    }
+
+    /// <summary>
+    /// Whether the object is currently on the platform. Can be set externally by tracking systems.
+    /// </summary>
+    public bool IsOnPlatform
+    {
+        get => _isOnPlatform;
+        set => _isOnPlatform = value;
+    }
 
     private void Start()
     {
@@ -35,9 +74,9 @@ public class TrackableObject : MonoBehaviour
     private void CheckIfFallen()
     {
         // If object falls below threshold, mark as off platform
-        if (isOnPlatform && transform.position.y < fallThreshold)
+        if (_isOnPlatform && transform.position.y < fallThreshold)
         {
-            isOnPlatform = false;
+            _isOnPlatform = false;
 
             if (GameManager.Instance != null)
             {
@@ -62,6 +101,6 @@ public class TrackableObject : MonoBehaviour
     /// </summary>
     public void ResetToOnPlatform()
     {
-        isOnPlatform = true;
+        _isOnPlatform = true;
     }
 }
