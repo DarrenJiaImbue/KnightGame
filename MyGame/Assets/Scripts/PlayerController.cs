@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
@@ -16,12 +15,10 @@ public class PlayerController : MonoBehaviour
     private Vector2 moveInput;
     private bool isSprinting;
     private Vector3 velocity;
-    private InputSystem_Actions inputActions;
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
-        inputActions = new InputSystem_Actions();
 
         // If camera controller not assigned, try to find it
         if (cameraController == null)
@@ -30,36 +27,14 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnEnable()
-    {
-        inputActions.Player.Enable();
-        inputActions.Player.Move.performed += OnMove;
-        inputActions.Player.Move.canceled += OnMove;
-        inputActions.Player.Sprint.performed += OnSprint;
-        inputActions.Player.Sprint.canceled += OnSprint;
-    }
-
-    private void OnDisable()
-    {
-        inputActions.Player.Move.performed -= OnMove;
-        inputActions.Player.Move.canceled -= OnMove;
-        inputActions.Player.Sprint.performed -= OnSprint;
-        inputActions.Player.Sprint.canceled -= OnSprint;
-        inputActions.Player.Disable();
-    }
-
-    private void OnMove(InputAction.CallbackContext context)
-    {
-        moveInput = context.ReadValue<Vector2>();
-    }
-
-    private void OnSprint(InputAction.CallbackContext context)
-    {
-        isSprinting = context.performed;
-    }
-
     private void Update()
     {
+        // Read input from keyboard
+        float horizontal = Input.GetAxisRaw("Horizontal");
+        float vertical = Input.GetAxisRaw("Vertical");
+        moveInput = new Vector2(horizontal, vertical);
+        isSprinting = Input.GetKey(KeyCode.LeftShift);
+
         MovePlayer();
         ApplyGravity();
     }

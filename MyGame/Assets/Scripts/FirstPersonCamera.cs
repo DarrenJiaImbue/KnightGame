@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class FirstPersonCamera : MonoBehaviour
 {
@@ -10,46 +9,19 @@ public class FirstPersonCamera : MonoBehaviour
     [SerializeField] private float verticalClampMax = 90f;
 
     private float xRotation = 0f;
-    private Vector2 lookInput;
-    private InputSystem_Actions inputActions;
 
-    private void Awake()
+    private void Start()
     {
-        inputActions = new InputSystem_Actions();
-    }
-
-    private void OnEnable()
-    {
-        inputActions.Player.Enable();
-        inputActions.Player.Look.performed += OnLook;
-        inputActions.Player.Look.canceled += OnLook;
-
         // Lock and hide cursor for first-person view
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
 
-    private void OnDisable()
-    {
-        inputActions.Player.Look.performed -= OnLook;
-        inputActions.Player.Look.canceled -= OnLook;
-        inputActions.Player.Disable();
-
-        // Unlock cursor when disabled
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-    }
-
-    private void OnLook(InputAction.CallbackContext context)
-    {
-        lookInput = context.ReadValue<Vector2>();
-    }
-
     private void Update()
     {
-        // Calculate rotation amounts
-        float mouseX = lookInput.x * mouseSensitivity * Time.deltaTime;
-        float mouseY = lookInput.y * mouseSensitivity * Time.deltaTime;
+        // Read mouse input
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
 
         // Rotate camera vertically (pitch)
         xRotation -= mouseY;
