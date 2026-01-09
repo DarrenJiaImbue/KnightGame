@@ -1,34 +1,67 @@
 using UnityEngine;
 
 /// <summary>
-/// Component that marks a GameObject as trackable by the ObjectTracker system.
-/// Attach this to any object you want to monitor for platform falls.
+/// Component for objects that need to be tracked for win condition.
+/// Detects when object falls off platform and notifies GameManager.
 /// </summary>
 public class TrackableObject : MonoBehaviour
 {
-    [Tooltip("Unique identifier for this object (optional)")]
-    public string objectId;
+    [Header("Fall Detection")]
+    [Tooltip("Y position below which object is considered off platform")]
+    [SerializeField] private float fallThreshold = -5f;
 
-    [Tooltip("Whether this object is currently being tracked")]
-    public bool isTracked = true;
+    private bool isOnPlatform = true;
 
-    private bool wasOnPlatform = true;
+    public bool IsOnPlatform => isOnPlatform;
 
-    /// <summary>
-    /// Whether this object is currently on the platform
-    /// </summary>
-    public bool IsOnPlatform
+    private void Start()
     {
-        get { return wasOnPlatform; }
-        internal set { wasOnPlatform = value; }
+        // Register with GameManager
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.RegisterTrackableObject(this);
+        }
+        else
+        {
+            Debug.LogWarning("GameManager not found. TrackableObject will not be tracked.");
+        }
     }
 
-    private void Awake()
+    private void Update()
     {
-        // Auto-generate ID if not set
-        if (string.IsNullOrEmpty(objectId))
+        CheckIfFallen();
+    }
+
+    private void CheckIfFallen()
+    {
+        // If object falls below threshold, mark as off platform
+        if (isOnPlatform && transform.position.y < fallThreshold)
         {
-            objectId = gameObject.name + "_" + GetInstanceID();
+            isOnPlatform = false;
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.OnObjectFellOff(this);
+            }
+
+            Debug.Log($"{gameObject.name} fell off platform at Y={transform.position.y}");
         }
+    }
+
+    private void OnDestroy()
+    {
+        // Unregister when destroyed
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.UnregisterTrackableObject(this);
+        }
+    }
+
+    /// <summary>
+    /// Manually reset object to on-platform state (useful for resets)
+    /// </summary>
+    public void ResetToOnPlatform()
+    {
+        isOnPlatform = true;
     }
 }
